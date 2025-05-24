@@ -14,9 +14,11 @@ def main():
         # TODO: make hole selection more intuitive for the players (not zero-indexed)
         selection = int(input(f"Player {curr_player}: Please select which pocket you would like to play. "))
         
-       
+        game_over, go_again = game.turn(curr_player, selection)
+        if go_again:
+            print("Player ", curr_player, ", you get another turn.")
+            continue
 
-        game_over = game.turn(curr_player, selection)
         player0 = not player0
 
 
