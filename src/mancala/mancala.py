@@ -45,13 +45,26 @@ class Mancala:
         if current_hole == 6 or current_hole == 13:
             return False, True
         
-        else: return False, False
+        # Check if player gets to collect marbles across from the last hole
+        elif ((player == 0 and current_hole < 6) or (player == 1 and current_hole > 6)) \
+            and (self.board[current_hole] == 1 and self.board[12 - current_hole] > 0):
+            
+            self.board[current_hole] = 0
+            
+            if player == 0:
+                self.board[6] += (self.board[12-current_hole] + 1)
+            else:
+                self.board[13] += (self.board[12-current_hole] + 1)
+            self.board[12-current_hole] = 0
+                 
+       
+        return False, False
     
     def checkGameOver(self):
         player0_marbles = sum(self.board[0:6])
         player1_marbles = sum(self.board[7:13])
 
-        if player1_marbles == 0 or player1_marbles == 0:
+        if player0_marbles == 0 or player1_marbles == 0:
             return True
 
         return False
