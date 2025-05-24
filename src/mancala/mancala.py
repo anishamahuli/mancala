@@ -10,6 +10,7 @@ class Mancala:
         board[13] = 0
         return board
     
+    # Returns two values: first is if the game is over and second is if the current player get another turn
     def turn(self, player, selection):
         # TBD: will both players give selection 1-6, and we convert based on which player it is?
         if (selection == 6 or selection == 13) \
@@ -37,13 +38,33 @@ class Mancala:
             self.board[current_hole] += 1
             marbles -= 1
         
-        return self.checkGameOver()
+        if self.checkGameOver() == True:
+            return True, False
+        
+        # One more turn
+        if current_hole == 6 or current_hole == 13:
+            return False, True
+        
+        # Check if player gets to collect marbles across from the last hole
+        elif ((player == 0 and current_hole < 6) or (player == 1 and current_hole > 6)) \
+            and (self.board[current_hole] == 1 and self.board[12 - current_hole] > 0):
+            
+            self.board[current_hole] = 0
+            
+            if player == 0:
+                self.board[6] += (self.board[12-current_hole] + 1)
+            else:
+                self.board[13] += (self.board[12-current_hole] + 1)
+            self.board[12-current_hole] = 0
+                 
+       
+        return False, False
     
     def checkGameOver(self):
         player0_marbles = sum(self.board[0:6])
         player1_marbles = sum(self.board[7:13])
 
-        if player1_marbles == 0 or player1_marbles == 0:
+        if player0_marbles == 0 or player1_marbles == 0:
             return True
 
         return False
