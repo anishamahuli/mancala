@@ -69,7 +69,10 @@ class Mancala:
 
         return False
 
-
+    def getScores(self):
+        player0_score = sum(self.board[0:7])
+        player1_score = sum(self.board[7:13])
+        return player0_score, player1_score
 
     # TODO: maybe have an alternate view for the other player so that it feels like they're looking at the board from their POV
     def printBoard(self):
