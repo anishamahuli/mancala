@@ -21,7 +21,13 @@ def main():
 
         player0 = not player0
 
-
+    player0_score, player1_score = game.getScores()
+    if player0_score > player1_score:
+        print("Player 0 wins ", player0_score," to ", player1_score)
+    elif player1_score > player0_score:
+        print("Player 1 wins ", player1_score," to ", player0_score)
+    else:
+        print("It's a draw. Good game!")
 
 if __name__ == "__main__":
     main()
