@@ -1,81 +1,99 @@
+import copy
+
 class Mancala:
     def __init__(self):
         self.board = self.createBoard()
 
     def createBoard(self):
-        # spots 0 through 5 and 7 through 12 contain marbles. Player 0 is 0 through 5 and player 1 is 7-12
-        # 6 and 13 are the mancalas. The mancala at index 6 belongs to player 0, and 13 belongs to 1
+        # spots 0 through 5 and 7 through 12 contain marbles; 6 & 13 are the stores
         board = [4] * 14
         board[6] = 0
         board[13] = 0
         return board
-    
-    # Returns two values: first is if the game is over and second is if the current player get another turn
-    def turn(self, player, selection):
-        # TBD: will both players give selection 1-6, and we convert based on which player it is?
-        if (selection == 6 or selection == 13) \
-            or (player == 0 and (selection > 5 or selection < 0)) \
-            or (player == 1 and (selection < 5 or selection > 13)) \
-            or self.board[selection] == 0:
-            # invalid selection
-            raise Exception ("Invalid selection. Try again.") # TODO: custom exception
-        
-        marbles = self.board[selection]
-        self.board[selection] = 0
 
-        current_hole = selection
+    def _is_valid_move(self, player, selection):
+        # Disallow selecting stores or opponent pits or empty pits
+        if selection in (6, 13):
+            return False
+        if player == 0 and not (0 <= selection <= 5):
+            return False
+        if player == 1 and not (7 <= selection <= 12):
+            return False
+        if self.board[selection] == 0:
+            return False
+        return True
+
+    def _execute_move(self, board, player, selection):
+        """
+        Perform the marble distribution and capture logic.
+        Returns True if the player gets another turn, else False.
+        """
+        marbles = board[selection]
+        board[selection] = 0
+        current = selection
+
+        # Distribute marbles
         while marbles > 0:
-            # iterate current hole, looping around after 13
-            if current_hole == 13:
-                current_hole = 0
-            else: current_hole += 1
-
-            # make sure it's not other player's mancala
-            if (player == 0 and current_hole == 13) or (player == 1 and current_hole == 6):
-                current_hole += 1
-
-            # drop marble into hole
-            self.board[current_hole] += 1
+            current = (current + 1) % 14
+            # Skip opponent's store
+            if (player == 0 and current == 13) or (player == 1 and current == 6):
+                continue
+            board[current] += 1
             marbles -= 1
-        
-        if self.checkGameOver() == True:
-            return True, False
-        
-        # One more turn
-        if current_hole == 6 or current_hole == 13:
-            return False, True
-        
-        # Check if player gets to collect marbles across from the last hole
-        elif ((player == 0 and current_hole < 6) or (player == 1 and current_hole > 6)) \
-            and (self.board[current_hole] == 1 and self.board[12 - current_hole] > 0):
-            
-            self.board[current_hole] = 0
-            
-            if player == 0:
-                self.board[6] += (self.board[12-current_hole] + 1)
-            else:
-                self.board[13] += (self.board[12-current_hole] + 1)
-            self.board[12-current_hole] = 0
-                 
-       
-        return False, False
-    
-    def checkGameOver(self):
-        player0_marbles = sum(self.board[0:6])
-        player1_marbles = sum(self.board[7:13])
 
-        if player0_marbles == 0 or player1_marbles == 0:
+        # Extra turn if last marble lands in player's store
+        if (player == 0 and current == 6) or (player == 1 and current == 13):
             return True
+
+        # Capture rule: last in empty own pit
+        own_range = range(0, 6) if player == 0 else range(7, 13)
+        store_index = 6 if player == 0 else 13
+        if current in own_range and board[current] == 1:
+            opp = 12 - current
+            if board[opp] > 0:
+                board[store_index] += board[opp] + 1
+                board[opp] = 0
+                board[current] = 0
 
         return False
 
+    def turn(self, player, selection):
+        """
+        Apply a turn on the main board. Returns (game_over, extra_turn).
+        """
+        if not self._is_valid_move(player, selection):
+            raise Exception("Invalid selection. Try again.")
+
+        extra = self._execute_move(self.board, player, selection)
+
+        # Check end condition
+        game_over = self.checkGameOver(self.board)
+        return (True, False) if game_over else (False, extra)
+
+    def simulate_turn(self, board, player, selection):
+        """
+        Simulate a turn on a copied board for Minimax. Returns (new_board, game_over, next_player).
+        """
+        temp = copy.deepcopy(board)
+        extra = self._execute_move(temp, player, selection)
+        game_over = self.checkGameOver(temp)
+        next_player = player if extra else 1 - player
+        return temp, game_over, next_player
+
+    def checkGameOver(self, board=None):
+        """
+        Returns True if either side's pits are empty.
+        """
+        b = board if board is not None else self.board
+        return sum(b[0:6]) == 0 or sum(b[7:13]) == 0
+
     def getScores(self):
         player0_score = sum(self.board[0:7])
-        player1_score = sum(self.board[7:13])
+        player1_score = sum(self.board[7:14])
         return player0_score, player1_score
 
-    # TODO: maybe have an alternate view for the other player so that it feels like they're looking at the board from their POV
     def printBoard(self):
+        # TODO: (maybe) make this wait a couple seconds
         print("        -- Player 2 --")
         print("  ", end="")
         for i in range(12, 6, -1):
@@ -87,5 +105,42 @@ class Mancala:
             print(f" {self.board[i]:2}", end=" ")
         print("\n        -- Player 1 --")
 
-            
-                
+# Minimax and helpers outside the class
+
+def get_legal_moves(board, player):
+    if player == 0:
+        return [i for i in range(0, 6) if board[i] > 0]
+    return [i for i in range(7, 13) if board[i] > 0]
+
+
+def evaluate_board(board, player):
+    # Simple store-difference heuristic
+    return board[6] - board[13] if player == 0 else board[13] - board[6]
+
+
+def minimax(board, depth, player, maximizing_player):
+    # Terminal or depth limit
+    if depth == 0 or sum(board[0:6]) == 0 or sum(board[7:13]) == 0:
+        return evaluate_board(board, maximizing_player), None
+
+    moves = get_legal_moves(board, player)
+    if not moves:
+        return evaluate_board(board, maximizing_player), None
+
+    best_move = None
+    if player == maximizing_player:
+        best_val = float('-inf')
+        for m in moves:
+            new_b, over, next_p = Mancala().simulate_turn(board, player, m)
+            val, _ = minimax(new_b, depth-1, next_p, maximizing_player)
+            if val > best_val:
+                best_val, best_move = val, m
+        return best_val, best_move
+    else:
+        best_val = float('inf')
+        for m in moves:
+            new_b, over, next_p = Mancala().simulate_turn(board, player, m)
+            val, _ = minimax(new_b, depth-1, next_p, maximizing_player)
+            if val < best_val:
+                best_val, best_move = val, m
+        return best_val, best_move

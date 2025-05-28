@@ -1,33 +1,71 @@
-from mancala import Mancala
-    
+from mancala import Mancala, minimax
+
+def get_human_move(board, player):
+    while True:
+        try:
+            selection = int(input(f"Player {player+1}, select a pocket (1-6): "))
+            if player == 0:
+                index = selection - 1
+            else:
+                index = selection + 6
+            if board[index] == 0:
+                print("That pocket is empty. Try again.")
+                continue
+            return index
+        except (ValueError, IndexError):
+            print("Invalid input. Try again.")
+
+def get_cpu_move(board, player, depth=5): # Tweak depth for CPU skill level
+    _, move = minimax(board, depth, player, player)
+    print(f"CPU Player {player + 1} chooses pocket {(move - 6) if player == 1 else (move + 1)}")
+    return move
+
 def main():
     game = Mancala()
+
+    # Choose player types: 'h' = human, 'c' = cpu
+    player_types = {}
+    for i in [0, 1]:
+        p_type = input(f"Is Player {i+1} a human or cpu? (h/c): ").lower()
+        player_types[i] = 'cpu' if p_type == 'c' else 'human'
+
+    current_player = 0
     game_over = False
-    player0 = True
 
     while not game_over:
         game.printBoard()
-        if player0: curr_player = 0
-        else: curr_player = 1
-        # prompt player for selection
+        board = game.board
 
-        # TODO: make hole selection more intuitive for the players (not zero-indexed)
-        selection = int(input(f"Player {curr_player}: Please select which pocket you would like to play. "))
-        
-        game_over, go_again = game.turn(curr_player, selection)
-        if go_again:
-            print("Player ", curr_player, ", you get another turn.")
+        if player_types[current_player] == 'cpu':
+            selection = get_cpu_move(board, current_player)
+        else:
+            selection = get_human_move(board, current_player)
+
+        try:
+            game_over, go_again = game.turn(current_player, selection)
+        except Exception as e:
+            print(e)
             continue
 
-        player0 = not player0
+        if go_again:
+            print(f"Player {current_player+1} gets another turn!")
+            continue
 
-    player0_score, player1_score = game.getScores()
-    if player0_score > player1_score:
-        print("Player 0 wins ", player0_score," to ", player1_score)
-    elif player1_score > player0_score:
-        print("Player 1 wins ", player1_score," to ", player0_score)
+        current_player = 1 - current_player  # switch player
+
+    # Game ended
+    print("\nGame over! Final board:")
+    game.printBoard()
+    player1_score, player2_score = game.getScores()
+
+    print(f"Player 1 score: {player1_score}")
+    print(f"Player 2 score: {player2_score}")
+    if player1_score > player2_score:
+        print("Player 0 wins!")
+    elif player2_score > player1_score:
+        print("Player 1 wins!")
     else:
-        print("It's a draw. Good game!")
+        print("It's a draw!")
 
 if __name__ == "__main__":
     main()
