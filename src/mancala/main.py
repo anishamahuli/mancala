@@ -15,9 +15,9 @@ def get_human_move(board, player):
         except (ValueError, IndexError):
             print("Invalid input. Try again.")
 
-def get_cpu_move(board, player, depth=5):
+def get_cpu_move(board, player, depth=5): # Tweak depth for CPU skill level
     _, move = minimax(board, depth, player, player)
-    print(f"CPU Player {player+1} chooses pocket {(move - 6) if player == 1 else (move + 1)}")
+    print(f"CPU Player {player + 1} chooses pocket {(move - 6) if player == 1 else (move + 1)}")
     return move
 
 def main():
@@ -56,13 +56,13 @@ def main():
     # Game ended
     print("\nGame over! Final board:")
     game.printBoard()
-    player0_score, player1_score = game.getScores()
+    player1_score, player2_score = game.getScores()
 
-    print(f"Player 1 score: {player0_score}")
-    print(f"Player 2 score: {player1_score}")
-    if player0_score > player1_score:
+    print(f"Player 1 score: {player1_score}")
+    print(f"Player 2 score: {player2_score}")
+    if player1_score > player2_score:
         print("Player 0 wins!")
-    elif player1_score > player0_score:
+    elif player2_score > player1_score:
         print("Player 1 wins!")
     else:
         print("It's a draw!")
